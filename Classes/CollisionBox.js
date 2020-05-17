@@ -1,4 +1,4 @@
-export default class CollisionBox{
+export default class CollisionBox {
   /**
    * Collision box object.
    * @param {number} x X position.
@@ -7,9 +7,9 @@ export default class CollisionBox{
    * @param {number} h Height.
    */
   constructor(x, y, w, h) {
-      this.x = x;
-      this.y = y;
-      this.width = w;
-      this.height = h;
+    this.x = x;
+    this.y = y;
+    this.width = w;
+    this.height = h;
   };
 }

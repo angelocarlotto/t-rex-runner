@@ -2,10 +2,10 @@ import Runner from './Runner.js'
 import Cloud from './Cloud.js'
 import HorizonLine from './HorizonLine.js'
 import NightMode from './NightMode.js'
-import {getRandomNum} from './Utils.js'
+import { getRandomNum } from './Utils.js'
 import Obstacle from './Obstacle.js'
-export default class Horizon{
-//******************************************************************************
+export default class Horizon {
+    //******************************************************************************
 
     /**
      * Horizon background class.
@@ -16,210 +16,210 @@ export default class Horizon{
      * @constructor
      */
     constructor(canvas, spritePos, dimensions, gapCoefficient) {
-      this.canvas = canvas;
-      this.canvasCtx = this.canvas.getContext('2d');
-      this.config = Horizon.config;
-      this.dimensions = dimensions;
-      this.gapCoefficient = gapCoefficient;
-      this.obstacles = [];
-      this.obstacleHistory = [];
-      this.horizonOffsets = [0, 0];
-      this.cloudFrequency = this.config.CLOUD_FREQUENCY;
-      this.spritePos = spritePos;
-      this.nightMode = null;
+        this.canvas = canvas;
+        this.canvasCtx = this.canvas.getContext('2d');
+        this.config = Horizon.config;
+        this.dimensions = dimensions;
+        this.gapCoefficient = gapCoefficient;
+        this.obstacles = [];
+        this.obstacleHistory = [];
+        this.horizonOffsets = [0, 0];
+        this.cloudFrequency = this.config.CLOUD_FREQUENCY;
+        this.spritePos = spritePos;
+        this.nightMode = null;
 
-      // Cloud
-      this.clouds = [];
-      this.cloudSpeed = this.config.BG_CLOUD_SPEED;
+        // Cloud
+        this.clouds = [];
+        this.cloudSpeed = this.config.BG_CLOUD_SPEED;
 
-      // Horizon
-      this.horizonLine = null;
-      this.init();
-  };
-
-
-  /**
-   * Horizon config.
-   * @enum {number}
-   */
-  static config = {
-      BG_CLOUD_SPEED: 0.2,
-      BUMPY_THRESHOLD: .3,
-      CLOUD_FREQUENCY: .5,
-      HORIZON_HEIGHT: 16,
-      MAX_CLOUDS: 6
-  };
+        // Horizon
+        this.horizonLine = null;
+        this.init();
+    };
 
 
-      /**
-       * Initialise the horizon. Just add the line and a cloud. No obstacles.
-       */
-      init () {
-          this.addCloud();
-          this.horizonLine = new HorizonLine(this.canvas, this.spritePos.HORIZON);
-          this.nightMode = new NightMode(this.canvas, this.spritePos.MOON,
-              this.dimensions.WIDTH);
-      }
+    /**
+     * Horizon config.
+     * @enum {number}
+     */
+    static config = {
+        BG_CLOUD_SPEED: 0.2,
+        BUMPY_THRESHOLD: .3,
+        CLOUD_FREQUENCY: .5,
+        HORIZON_HEIGHT: 16,
+        MAX_CLOUDS: 6
+    };
 
-      /**
-       * @param {number} deltaTime
-       * @param {number} currentSpeed
-       * @param {boolean} updateObstacles Used as an override to prevent
-       *     the obstacles from being updated / added. This happens in the
-       *     ease in section.
-       * @param {boolean} showNightMode Night mode activated.
-       */
-      update (deltaTime, currentSpeed, updateObstacles, showNightMode) {
-          this.runningTime += deltaTime;
-          this.horizonLine.update(deltaTime, currentSpeed);
-          this.nightMode.update(showNightMode);
-          this.updateClouds(deltaTime, currentSpeed);
 
-          if (updateObstacles) {
-              this.updateObstacles(deltaTime, currentSpeed);
-          }
-      }
+    /**
+     * Initialise the horizon. Just add the line and a cloud. No obstacles.
+     */
+    init() {
+        this.addCloud();
+        this.horizonLine = new HorizonLine(this.canvas, this.spritePos.HORIZON);
+        this.nightMode = new NightMode(this.canvas, this.spritePos.MOON,
+            this.dimensions.WIDTH);
+    }
 
-      /**
-       * Update the cloud positions.
-       * @param {number} deltaTime
-       * @param {number} currentSpeed
-       */
-      updateClouds (deltaTime, speed) {
-          var cloudSpeed = this.cloudSpeed / 1000 * deltaTime * speed;
-          var numClouds = this.clouds.length;
+    /**
+     * @param {number} deltaTime
+     * @param {number} currentSpeed
+     * @param {boolean} updateObstacles Used as an override to prevent
+     *     the obstacles from being updated / added. This happens in the
+     *     ease in section.
+     * @param {boolean} showNightMode Night mode activated.
+     */
+    update(deltaTime, currentSpeed, updateObstacles, showNightMode) {
+        this.runningTime += deltaTime;
+        this.horizonLine.update(deltaTime, currentSpeed);
+        this.nightMode.update(showNightMode);
+        this.updateClouds(deltaTime, currentSpeed);
 
-          if (numClouds) {
-              for (var i = numClouds - 1; i >= 0; i--) {
-                  this.clouds[i].update(cloudSpeed);
-              }
+        if (updateObstacles) {
+            this.updateObstacles(deltaTime, currentSpeed);
+        }
+    }
 
-              var lastCloud = this.clouds[numClouds - 1];
+    /**
+     * Update the cloud positions.
+     * @param {number} deltaTime
+     * @param {number} currentSpeed
+     */
+    updateClouds(deltaTime, speed) {
+        var cloudSpeed = this.cloudSpeed / 1000 * deltaTime * speed;
+        var numClouds = this.clouds.length;
 
-              // Check for adding a new cloud.
-              if (numClouds < this.config.MAX_CLOUDS &&
-                  (this.dimensions.WIDTH - lastCloud.xPos) > lastCloud.cloudGap &&
-                  this.cloudFrequency > Math.random()) {
-                  this.addCloud();
-              }
+        if (numClouds) {
+            for (var i = numClouds - 1; i >= 0; i--) {
+                this.clouds[i].update(cloudSpeed);
+            }
 
-              // Remove expired clouds.
-              this.clouds = this.clouds.filter(function (obj) {
-                  return !obj.remove;
-              });
-          } else {
-              this.addCloud();
-          }
-      }
+            var lastCloud = this.clouds[numClouds - 1];
 
-      /**
-       * Update the obstacle positions.
-       * @param {number} deltaTime
-       * @param {number} currentSpeed
-       */
-      updateObstacles (deltaTime, currentSpeed) {
-          // Obstacles, move to Horizon layer.
-          var updatedObstacles = this.obstacles.slice(0);
+            // Check for adding a new cloud.
+            if (numClouds < this.config.MAX_CLOUDS &&
+                (this.dimensions.WIDTH - lastCloud.xPos) > lastCloud.cloudGap &&
+                this.cloudFrequency > Math.random()) {
+                this.addCloud();
+            }
 
-          for (var i = 0; i < this.obstacles.length; i++) {
-              var obstacle = this.obstacles[i];
-              obstacle.update(deltaTime, currentSpeed);
+            // Remove expired clouds.
+            this.clouds = this.clouds.filter(function (obj) {
+                return !obj.remove;
+            });
+        } else {
+            this.addCloud();
+        }
+    }
 
-              // Clean up existing obstacles.
-              if (obstacle.remove) {
-                  updatedObstacles.shift();
-              }
-          }
-          this.obstacles = updatedObstacles;
+    /**
+     * Update the obstacle positions.
+     * @param {number} deltaTime
+     * @param {number} currentSpeed
+     */
+    updateObstacles(deltaTime, currentSpeed) {
+        // Obstacles, move to Horizon layer.
+        var updatedObstacles = this.obstacles.slice(0);
 
-          if (this.obstacles.length > 0) {
-              var lastObstacle = this.obstacles[this.obstacles.length - 1];
+        for (var i = 0; i < this.obstacles.length; i++) {
+            var obstacle = this.obstacles[i];
+            obstacle.update(deltaTime, currentSpeed);
 
-              if (lastObstacle && !lastObstacle.followingObstacleCreated &&
-                  lastObstacle.isVisible() &&
-                  (lastObstacle.xPos + lastObstacle.width + lastObstacle.gap) <
-                  this.dimensions.WIDTH) {
-                  this.addNewObstacle(currentSpeed);
-                  lastObstacle.followingObstacleCreated = true;
-              }
-          } else {
-              // Create new obstacles.
-              this.addNewObstacle(currentSpeed);
-          }
-      }
+            // Clean up existing obstacles.
+            if (obstacle.remove) {
+                updatedObstacles.shift();
+            }
+        }
+        this.obstacles = updatedObstacles;
 
-      removeFirstObstacle () {
-          this.obstacles.shift();
-      }
+        if (this.obstacles.length > 0) {
+            var lastObstacle = this.obstacles[this.obstacles.length - 1];
 
-      /**
-       * Add a new obstacle.
-       * @param {number} currentSpeed
-       */
-      addNewObstacle (currentSpeed) {
-          var obstacleTypeIndex = getRandomNum(0, Obstacle.types.length - 1);
-          var obstacleType = Obstacle.types[obstacleTypeIndex];
+            if (lastObstacle && !lastObstacle.followingObstacleCreated &&
+                lastObstacle.isVisible() &&
+                (lastObstacle.xPos + lastObstacle.width + lastObstacle.gap) <
+                this.dimensions.WIDTH) {
+                this.addNewObstacle(currentSpeed);
+                lastObstacle.followingObstacleCreated = true;
+            }
+        } else {
+            // Create new obstacles.
+            this.addNewObstacle(currentSpeed);
+        }
+    }
 
-          // Check for multiples of the same type of obstacle.
-          // Also check obstacle is available at current speed.
-          if (this.duplicateObstacleCheck(obstacleType.type) ||
-              currentSpeed < obstacleType.minSpeed) {
-              this.addNewObstacle(currentSpeed);
-          } else {
-              var obstacleSpritePos = this.spritePos[obstacleType.type];
+    removeFirstObstacle() {
+        this.obstacles.shift();
+    }
 
-              this.obstacles.push(new Obstacle(this.canvasCtx, obstacleType,
-                  obstacleSpritePos, this.dimensions,
-                  this.gapCoefficient, currentSpeed, obstacleType.width));
+    /**
+     * Add a new obstacle.
+     * @param {number} currentSpeed
+     */
+    addNewObstacle(currentSpeed) {
+        var obstacleTypeIndex = getRandomNum(0, Obstacle.types.length - 1);
+        var obstacleType = Obstacle.types[obstacleTypeIndex];
 
-              this.obstacleHistory.unshift(obstacleType.type);
+        // Check for multiples of the same type of obstacle.
+        // Also check obstacle is available at current speed.
+        if (this.duplicateObstacleCheck(obstacleType.type) ||
+            currentSpeed < obstacleType.minSpeed) {
+            this.addNewObstacle(currentSpeed);
+        } else {
+            var obstacleSpritePos = this.spritePos[obstacleType.type];
 
-              if (this.obstacleHistory.length > 1) {
-                  this.obstacleHistory.splice(Runner.config.MAX_OBSTACLE_DUPLICATION);
-              }
-          }
-      }
+            this.obstacles.push(new Obstacle(this.canvasCtx, obstacleType,
+                obstacleSpritePos, this.dimensions,
+                this.gapCoefficient, currentSpeed, obstacleType.width));
 
-      /**
-       * Returns whether the previous two obstacles are the same as the next one.
-       * Maximum duplication is set in config value MAX_OBSTACLE_DUPLICATION.
-       * @return {boolean}
-       */
-      duplicateObstacleCheck (nextObstacleType) {
-          var duplicateCount = 0;
+            this.obstacleHistory.unshift(obstacleType.type);
 
-          for (var i = 0; i < this.obstacleHistory.length; i++) {
-              duplicateCount = this.obstacleHistory[i] == nextObstacleType ?
-                  duplicateCount + 1 : 0;
-          }
-          return duplicateCount >= Runner.config.MAX_OBSTACLE_DUPLICATION;
-      }
+            if (this.obstacleHistory.length > 1) {
+                this.obstacleHistory.splice(Runner.config.MAX_OBSTACLE_DUPLICATION);
+            }
+        }
+    }
 
-      /**
-       * Reset the horizon layer.
-       * Remove existing obstacles and reposition the horizon line.
-       */
-      reset () {
-          this.obstacles = [];
-          this.horizonLine.reset();
-          this.nightMode.reset();
-      }
+    /**
+     * Returns whether the previous two obstacles are the same as the next one.
+     * Maximum duplication is set in config value MAX_OBSTACLE_DUPLICATION.
+     * @return {boolean}
+     */
+    duplicateObstacleCheck(nextObstacleType) {
+        var duplicateCount = 0;
 
-      /**
-       * Update the canvas width and scaling.
-       * @param {number} width Canvas width.
-       * @param {number} height Canvas height.
-       */
-      resize (width, height) {
-          this.canvas.width = width;
-          this.canvas.height = height;
-      }
+        for (var i = 0; i < this.obstacleHistory.length; i++) {
+            duplicateCount = this.obstacleHistory[i] == nextObstacleType ?
+                duplicateCount + 1 : 0;
+        }
+        return duplicateCount >= Runner.config.MAX_OBSTACLE_DUPLICATION;
+    }
 
-      /**
-       * Add a new cloud to the horizon.
-       */
-      addCloud () {
-          this.clouds.push(new Cloud(this.canvas, this.spritePos.CLOUD,
-              this.dimensions.WIDTH));
-      }
-  }
+    /**
+     * Reset the horizon layer.
+     * Remove existing obstacles and reposition the horizon line.
+     */
+    reset() {
+        this.obstacles = [];
+        this.horizonLine.reset();
+        this.nightMode.reset();
+    }
+
+    /**
+     * Update the canvas width and scaling.
+     * @param {number} width Canvas width.
+     * @param {number} height Canvas height.
+     */
+    resize(width, height) {
+        this.canvas.width = width;
+        this.canvas.height = height;
+    }
+
+    /**
+     * Add a new cloud to the horizon.
+     */
+    addCloud() {
+        this.clouds.push(new Cloud(this.canvas, this.spritePos.CLOUD,
+            this.dimensions.WIDTH));
+    }
+}

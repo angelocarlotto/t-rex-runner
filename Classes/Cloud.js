@@ -1,45 +1,45 @@
-import {getRandomNum} from './Utils.js'
-import {IS_HIDPI} from './Config.js'
+import { getRandomNum } from './Utils.js'
+import { IS_HIDPI } from './Config.js'
 import Runner from './Runner.js'
-export default class Cloud{
+export default class Cloud {
 
-          /**
-   * Cloud object config.
-   * @enum {number}
-   */
-  static config = {
-    HEIGHT: 14,
-    MAX_CLOUD_GAP: 400,
-    MAX_SKY_LEVEL: 30,
-    MIN_CLOUD_GAP: 100,
-    MIN_SKY_LEVEL: 71,
-    WIDTH: 46
-};
-
-
-constructor(canvas, spritePos, containerWidth){
+    /**
+* Cloud object config.
+* @enum {number}
+*/
+    static config = {
+        HEIGHT: 14,
+        MAX_CLOUD_GAP: 400,
+        MAX_SKY_LEVEL: 30,
+        MIN_CLOUD_GAP: 100,
+        MIN_SKY_LEVEL: 71,
+        WIDTH: 46
+    };
 
 
-    this.canvas = canvas;
-    this.canvasCtx = this.canvas.getContext('2d');
-    this.spritePos = spritePos;
-    this.containerWidth = containerWidth;
-    this.xPos = containerWidth;
-    this.yPos = 0;
-    this.remove = false;
-    this.cloudGap = getRandomNum(Cloud.config.MIN_CLOUD_GAP,
-        Cloud.config.MAX_CLOUD_GAP);
+    constructor(canvas, spritePos, containerWidth) {
 
 
-        
-    this.init();
-}
+        this.canvas = canvas;
+        this.canvasCtx = this.canvas.getContext('2d');
+        this.spritePos = spritePos;
+        this.containerWidth = containerWidth;
+        this.xPos = containerWidth;
+        this.yPos = 0;
+        this.remove = false;
+        this.cloudGap = getRandomNum(Cloud.config.MIN_CLOUD_GAP,
+            Cloud.config.MAX_CLOUD_GAP);
+
+
+
+        this.init();
+    }
 
 
     /**
      * Initialise the cloud. Sets the Cloud height.
      */
-    init () {
+    init() {
         this.yPos = getRandomNum(Cloud.config.MAX_SKY_LEVEL,
             Cloud.config.MIN_SKY_LEVEL);
         this.draw();
@@ -48,7 +48,7 @@ constructor(canvas, spritePos, containerWidth){
     /**
      * Draw the cloud.
      */
-    draw () {
+    draw() {
         this.canvasCtx.save();
         var sourceWidth = Cloud.config.WIDTH;
         var sourceHeight = Cloud.config.HEIGHT;
@@ -71,7 +71,7 @@ constructor(canvas, spritePos, containerWidth){
      * Update the cloud position.
      * @param {number} speed
      */
-    update (speed) {
+    update(speed) {
         if (!this.remove) {
             this.xPos -= Math.ceil(speed);
             this.draw();
@@ -87,9 +87,9 @@ constructor(canvas, spritePos, containerWidth){
      * Check if the cloud is visible on the stage.
      * @return {boolean}
      */
-    isVisible () {
+    isVisible() {
         return this.xPos + Cloud.config.WIDTH > 0;
     }
 
 
- }
+}
