@@ -37,6 +37,15 @@ html, body {
   width: 100%;
 }
 
+.offline .interstitial-wrapper .generation {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  right: 0;
+  font-weight: bold;
+  text-align: center;
+}
+
 .offline .runner-container {
   height: 150px;
   max-width: 600px;

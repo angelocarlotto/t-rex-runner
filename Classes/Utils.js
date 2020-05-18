@@ -169,7 +169,7 @@ export function drawCollisionBoxes(canvasCtx, tRexBox, obstacleBox) {
  * @param {CollisionBox} obstacleBox
  * @return {boolean} Whether the boxes intersected.
  */
-function boxCompare(tRexBox, obstacleBox) {
+export function boxCompare(tRexBox, obstacleBox) {
     var crashed = false;
     var tRexBoxX = tRexBox.x;
     var tRexBoxY = tRexBox.y;
@@ -188,3 +188,4 @@ function boxCompare(tRexBox, obstacleBox) {
     return crashed;
 };
 
+export function noop() {}
