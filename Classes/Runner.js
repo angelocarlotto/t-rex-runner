@@ -4,6 +4,7 @@ import {
     , decodeBase64ToArrayBuffer
     , createCanvas
     , vibrate
+    , noop
 } from './Utils.js'
 import {
     DEFAULT_WIDTH
@@ -15,8 +16,9 @@ import Horizon from './Horizon.js'
 import DistanceMeter from './DistanceMeter.js'
 import Trex from './Trex.js'
 import GameOverPanel from './GameOverPanel.js'
+import TrexGroup from './TrexGroup.js'
 export default class Runner {
-
+    static generation = 0;
     /**
      * Default game configuration.
      * @enum {number}
@@ -42,7 +44,11 @@ export default class Runner {
         MOBILE_SPEED_COEFFICIENT: 1.2,
         RESOURCE_TEMPLATE_ID: 'audio-resources',
         SPEED: 6,
-        SPEED_DROP_COEFFICIENT: 3
+        SPEED_DROP_COEFFICIENT: 3,
+        DINO_COUNT: 1,
+        onReset: noop,
+        onRunning: noop,
+        onCrash: noop
     };
 
     /**
@@ -90,7 +96,7 @@ export default class Runner {
             STAR: { x: 1276, y: 2 }
         }
     };
-    
+
     /**
      * Key code mapping.
      * @enum {Object}
@@ -154,12 +160,15 @@ export default class Runner {
         }
         Runner.instance_ = this;
 
+        this.isFirstTime = false;
         this.outerContainerEl = document.querySelector(outerContainerId);
         this.containerEl = null;
         this.snackbarEl = null;
         this.detailsButton = this.outerContainerEl.querySelector('#details-button');
+        this.generationEl = document.querySelector('.generation');
 
-        this.config = opt_config || Runner.config;
+        //this.config = opt_config || Runner.config;
+        this.config = Object.assign({}, Runner.config, opt_config);
 
         this.dimensions = Runner.defaultDimensions;
 
@@ -223,8 +232,12 @@ export default class Runner {
         this.containerEl.className = Runner.classes.CONTAINER;
 
         // Player canvas container.
-        this.canvas = createCanvas(this.containerEl, this.dimensions.WIDTH,
-            this.dimensions.HEIGHT, Runner.classes.PLAYER);
+        this.canvas = createCanvas(
+            this.containerEl,
+            this.dimensions.WIDTH,
+            this.dimensions.HEIGHT,
+            Runner.classes.PLAYER
+        );
 
         this.canvasCtx = this.canvas.getContext('2d');
         this.canvasCtx.fillStyle = '#f7f7f7';
@@ -232,15 +245,26 @@ export default class Runner {
         Runner.updateCanvasScaling(this.canvas);
 
         // Horizon contains clouds, obstacles and the ground.
-        this.horizon = new Horizon(this.canvas, this.spriteDef, this.dimensions,
-            this.config.GAP_COEFFICIENT);
+        this.horizon = new Horizon(
+            this.canvas,
+            this.spriteDef,
+            this.dimensions,
+            this.config.GAP_COEFFICIENT
+        );
 
         // Distance meter
-        this.distanceMeter = new DistanceMeter(this.canvas,
-            this.spriteDef.TEXT_SPRITE, this.dimensions.WIDTH);
+        this.distanceMeter = new DistanceMeter(
+            this.canvas,
+            this.spriteDef.TEXT_SPRITE,
+            this.dimensions.WIDTH
+        );
 
         // Draw t-rex
-        this.tRex = new Trex(this.canvas, this.spriteDef.TREX);
+        //this.tRex = new Trex(this.canvas, this.spriteDef.TREX);
+        this.tRexGroup = new TrexGroup(this.config.DINO_COUNT, this.canvas, this.spriteDef.TREX);
+        this.tRexGroup.onRunning = this.config.onRunning;
+        this.tRexGroup.onCrash = this.config.onCrash;
+        this.tRex = this.tRexGroup.tRexes[0];
 
         this.outerContainerEl.appendChild(this.containerEl);
 
@@ -253,15 +277,17 @@ export default class Runner {
 
         window.addEventListener(Runner.events.RESIZE,
             this.debounceResize.bind(this));
+
+        //this.playIntro();
+        this.restart();
     }
 
-     /**
-     * Debounce the resize event.
-     */
+    /**
+    * Debounce the resize event.
+    */
     debounceResize() {
         if (!this.resizeTimerId_) {
-            this.resizeTimerId_ =
-                setInterval(this.adjustDimensions.bind(this), 250);
+            this.resizeTimerId_ = setInterval(this.adjustDimensions.bind(this), 250);
         }
     }
 
@@ -273,8 +299,9 @@ export default class Runner {
         this.resizeTimerId_ = null;
 
         var boxStyles = window.getComputedStyle(this.outerContainerEl);
-        var padding = Number(boxStyles.paddingLeft.substr(0,
-            boxStyles.paddingLeft.length - 2));
+        var padding = Number(
+            boxStyles.paddingLeft.substr(0, boxStyles.paddingLeft.length - 2)
+        );
 
         this.dimensions.WIDTH = this.outerContainerEl.offsetWidth - padding * 2;
 
@@ -288,23 +315,24 @@ export default class Runner {
             this.distanceMeter.calcXPos(this.dimensions.WIDTH);
             this.clearCanvas();
             this.horizon.update(0, 0, true);
-            this.tRex.update(0);
-
+            //this.tRex.update(0);
+            this.tRexGroup.update(0);
             // Outer container and distance meter.
-            if (this.playing || this.crashed || this.paused) {
+            if (this.playing || this.crashed /*|| this.paused*/) {
                 this.containerEl.style.width = this.dimensions.WIDTH + 'px';
                 this.containerEl.style.height = this.dimensions.HEIGHT + 'px';
                 this.distanceMeter.update(0, Math.ceil(this.distanceRan));
                 this.stop();
             } else {
-                this.tRex.draw(0, 0);
+                //this.tRex.draw(0, 0);
+                this.tRexGroup.draw(0, 0);
             }
 
             // Game over panel.
-            if (this.crashed && this.gameOverPanel) {
-                this.gameOverPanel.updateDimensions(this.dimensions.WIDTH);
-                this.gameOverPanel.draw();
-            }
+             if (this.crashed && this.gameOverPanel) {
+                 this.gameOverPanel.updateDimensions(this.dimensions.WIDTH);
+                 this.gameOverPanel.draw();
+             }
         }
     }
 
@@ -331,24 +359,30 @@ export default class Runner {
     startGame() {
         this.runningTime = 0;
         this.playingIntro = false;
-        this.tRex.playingIntro = false;
+        //this.tRex.playingIntro = false;
+        this.tRexGroup.tRexes.forEach(e => e.playingIntro = false)
         this.containerEl.style.webkitAnimation = '';
         this.playCount++;
 
         // Handle tabbing off the page. Pause the current game.
-        document.addEventListener(Runner.events.VISIBILITY,
-            this.onVisibilityChange.bind(this));
-
-        window.addEventListener(Runner.events.BLUR,
-            this.onVisibilityChange.bind(this));
-
-        window.addEventListener(Runner.events.FOCUS,
-            this.onVisibilityChange.bind(this));
+           document.addEventListener(Runner.events.VISIBILITY,
+               this.onVisibilityChange.bind(this));
+   
+           window.addEventListener(Runner.events.BLUR,
+               this.onVisibilityChange.bind(this));
+   
+           window.addEventListener(Runner.events.FOCUS,
+               this.onVisibilityChange.bind(this));
+               
     }
 
     clearCanvas() {
-        this.canvasCtx.clearRect(0, 0, this.dimensions.WIDTH,
-            this.dimensions.HEIGHT);
+        this.canvasCtx.clearRect(
+            0,
+            0,
+            this.dimensions.WIDTH,
+            this.dimensions.HEIGHT
+        );
     }
 
     /**
@@ -364,30 +398,40 @@ export default class Runner {
         if (this.playing) {
             this.clearCanvas();
 
-            if (this.tRex.jumping) {
-                this.tRex.updateJump(deltaTime);
-            }
+             //if (this.tRex.jumping) {
+            //this.tRex.updateJump(deltaTime);
+            this.tRexGroup.updateJump(deltaTime);
+            // }
 
             this.runningTime += deltaTime;
             var hasObstacles = this.runningTime > this.config.CLEAR_TIME;
+            // First time
+            if (this.isFirstTime) {
+                if (!this.activated && !this.crashed) {
+                    this.playing = true;
+                    this.activated = true;
+                    this.startGame();
+                }
+            }
 
             // First jump triggers the intro.
-            if (this.tRex.jumpCount == 1 && !this.playingIntro) {
-                this.playIntro();
-            }
+            //if (this.tRex.jumpCount == 1 && !this.playingIntro) {
+             //    this.playIntro();
+            // }
+             
 
             // The horizon doesn't move until the intro is over.
-            if (this.playingIntro) {
-                this.horizon.update(0, this.currentSpeed, hasObstacles);
-            } else {
+             if (this.playingIntro) {
+                 this.horizon.update(0, this.currentSpeed, hasObstacles);
+             } else {
                 deltaTime = !this.activated ? 0 : deltaTime;
-                this.horizon.update(deltaTime, this.currentSpeed, hasObstacles,
-                    this.inverted);
-            }
+                this.horizon.update(deltaTime, this.currentSpeed, hasObstacles, this.inverted);
+             }
 
             // Check for collisions.
             var collision = hasObstacles &&
-                checkForCollision(this.horizon.obstacles[0], this.tRex);
+                //checkForCollision(this.horizon.obstacles[0], this.tRex);
+                this.tRexGroup.checkForCollision(this.horizon.obstacles[0]);
 
             if (!collision) {
                 this.distanceRan += this.currentSpeed * deltaTime / this.msPerFrame;
@@ -429,10 +473,18 @@ export default class Runner {
             }
         }
 
-        if (this.playing || (!this.activated &&
-            this.tRex.blinkCount < Runner.config.MAX_BLINK_COUNT)) {
-            this.tRex.update(deltaTime);
+        if (this.playing || (!this.activated /*&&
+            this.tRex.blinkCount < Runner.config.MAX_BLINK_COUNT*/)) {
+            //this.tRex.update(deltaTime);
+            this.tRexGroup.update(deltaTime);
             this.scheduleNextUpdate();
+        }
+
+        const lives = this.tRexGroup.lives();
+        if (lives > 0) {
+            this.generationEl.innerText = `GENERATION #${Runner.generation} | LIVE x ${this.tRexGroup.lives()}`;
+        } else {
+            this.generationEl.innerHTML = `<div style="color: red;">GENERATION #${Runner.generation}  |  GAME OVER</div>`;
         }
     }
 
@@ -534,9 +586,9 @@ export default class Runner {
         }
     }
 
-     /**
-     * RequestAnimationFrame wrapper.
-     */
+    /**
+    * RequestAnimationFrame wrapper.
+    */
     scheduleNextUpdate() {
         if (!this.updatePending) {
             this.updatePending = true;
@@ -563,7 +615,8 @@ export default class Runner {
         this.crashed = true;
         this.distanceMeter.acheivement = false;
 
-        this.tRex.update(100, Trex.status.CRASHED);
+        //this.tRex.update(100, Trex.status.CRASHED);
+        this.tRexGroup.update(100, Trex.status.CRASHED);
 
         // Game over panel.
         if (!this.gameOverPanel) {
@@ -582,6 +635,10 @@ export default class Runner {
 
         // Reset the time clock.
         this.time = getTimeStamp();
+
+        setTimeout(() => {
+            this.restart();
+          }, 500);
     }
 
     stop() {
@@ -595,7 +652,8 @@ export default class Runner {
         if (!this.crashed) {
             this.playing = true;
             this.paused = false;
-            this.tRex.update(0, Trex.status.RUNNING);
+            //this.tRex.update(0, Trex.status.RUNNING);
+            this.tRexGroup.update(0, Trex.status.RUNNING);
             this.time = getTimeStamp();
             this.update();
         }
@@ -614,11 +672,23 @@ export default class Runner {
             this.clearCanvas();
             this.distanceMeter.reset(this.highestScore);
             this.horizon.reset();
-            this.tRex.reset();
+            //this.tRex.reset();
+            this.tRexGroup.reset();
+            this.config.onReset(this.tRexGroup.tRexes);
             this.playSound(this.soundFx.BUTTON_PRESS);
             this.invert(true);
             this.update();
+        } else {
+            this.isFirstTime = true;
+            this.tRexGroup.reset();
+            this.config.onReset(this.tRexGroup.tRexes);
+            if (!this.playing) {
+                this.playIntro();
+                //this.playing = true;
+                //this.update();
+            }
         }
+        Runner.generation += 1;
     }
 
     /**
@@ -718,7 +788,7 @@ export default class Runner {
             }
         }
     }
-    
+
     /**
      * Create the touch controller. A div that covers whole screen.
      */
@@ -735,7 +805,8 @@ export default class Runner {
     playIntro() {
         if (!this.activated && !this.crashed) {
             this.playingIntro = true;
-            this.tRex.playingIntro = true;
+            //this.tRex.playingIntro = true;
+            this.tRexGroup.tRexes.forEach(e => e.playingIntro = true)
 
             // CSS animation definition.
             var keyframes = '@-webkit-keyframes intro { ' +
@@ -795,7 +866,7 @@ export default class Runner {
         return e.button != null && e.button < 2 &&
             e.type == Runner.events.MOUSEUP && e.target == this.canvas;
     }
-    
+
     /**
      * Remove all listeners.
      */
@@ -820,7 +891,8 @@ export default class Runner {
             document.visibilityState != 'visible') {
             this.stop();
         } else if (!this.crashed) {
-            this.tRex.reset();
+            //this.tRex.reset();
+            this.tRexGroup.reset()
             this.play();
         }
     }

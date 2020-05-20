@@ -1,4 +1,4 @@
-import { getTimeStamp } from './Utils.js'
+import { getTimeStamp ,getRandomNum} from './Utils.js'
 import { IS_HIDPI, FPS } from './Config.js'
 import CollisionBox from './CollisionBox.js'
 import Runner from './Runner.js'
@@ -36,6 +36,8 @@ export default class Trex {
         this.speedDrop = false;
         this.jumpCount = 0;
         this.jumpspotX = 0;
+
+        this.rgba=`rgba(${getRandomNum(1,255)},${getRandomNum(1,255)},${getRandomNum(1,255)},0.5)`
 
         this.init();
     };
@@ -221,12 +223,17 @@ export default class Trex {
         sourceX += this.spritePos.x;
         sourceY += this.spritePos.y;
 
+        this.canvasCtx.fillStyle = this.rgba;
+        
         // Ducking.
         if (this.ducking && this.status != Trex.status.CRASHED) {
             this.canvasCtx.drawImage(Runner.imageSprite, sourceX, sourceY,
                 sourceWidth, sourceHeight,
                 this.xPos, this.yPos,
                 this.config.WIDTH_DUCK, this.config.HEIGHT);
+
+                this.canvasCtx.fillRect(this.xPos, this.yPos,
+                    this.config.WIDTH_DUCK, this.config.HEIGHT);
         } else {
             // Crashed whilst ducking. Trex is standing up so needs adjustment.
             if (this.ducking && this.status == Trex.status.CRASHED) {
@@ -237,6 +244,9 @@ export default class Trex {
                 sourceWidth, sourceHeight,
                 this.xPos, this.yPos,
                 this.config.WIDTH, this.config.HEIGHT);
+
+                this.canvasCtx.fillRect(this.xPos, this.yPos,
+                    this.config.WIDTH, this.config.HEIGHT);
         }
     }
 
@@ -271,6 +281,9 @@ export default class Trex {
      * @param {number} speed
      */
     startJump(speed) {
+        if (speed === undefined) {
+            speed = Runner.instance_.currentSpeed;
+          }
         if (!this.jumping) {
             this.update(0, Trex.status.JUMPING);
             // Tweak the jump velocity based on the speed.
@@ -362,5 +375,6 @@ export default class Trex {
         this.midair = false;
         this.speedDrop = false;
         this.jumpCount = 0;
+        this.crashed = false;
     }
 }
