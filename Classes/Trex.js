@@ -137,7 +137,9 @@ export default class Trex {
             msPerFrame: 1000 / 8
         }
     };
-
+    dispose() {
+        this.brain.dispose();
+      }
     mutate(){
         this.brain.mutate(0.1);
     }

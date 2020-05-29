@@ -32,6 +32,7 @@ export default class TrexGroup {
       this.tRexes[i].brain.mutate();
 
     }
+    
     this.savedtRexes = [];
   }
   

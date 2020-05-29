@@ -15,7 +15,7 @@ import {getRandomNum} from './Classes/Utils.js'
             DINO_COUNT:1000,
             onReset: handleReset,
           });
-
+          tf.setBackend('cpu')
           window['Runner'] = Runner;
     }
 function handleReset(Dinos) {
