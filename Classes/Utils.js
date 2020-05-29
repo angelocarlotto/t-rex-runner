@@ -1,7 +1,7 @@
 import CollisionBox from './CollisionBox.js'
 import Trex from './Trex.js'
 import Runner from './Runner.js'
-import { IS_IOS, IS_MOBILE } from './Config.js'
+import { IS_IOS, IS_MOBILE ,DEFAULT_WIDTH ,DEFAULT_HEIGHT} from './Config.js'
 
 /**
      * Get random number.
@@ -187,5 +187,23 @@ export function boxCompare(tRexBox, obstacleBox) {
 
     return crashed;
 };
+
+/**
+ * 
+ * @param {object} state
+ * returns an array 
+ * converts state to a feature scaled array
+ */
+export function convertStateToVector(state) {
+    if (state) {
+      return [
+        state.obstacleX / DEFAULT_WIDTH,
+        state.obstacleWidth / DEFAULT_WIDTH,
+       // state.obstacleY / DEFAULT_HEIGHT,
+        state.speed / 100
+      ];
+    }
+    return [0, 0, 0];
+  }
 
 export function noop() {}

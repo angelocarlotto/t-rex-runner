@@ -1,7 +1,8 @@
-import { getTimeStamp ,getRandomNum} from './Utils.js'
+import { getTimeStamp ,getRandomNum,convertStateToVector} from './Utils.js'
 import { IS_HIDPI, FPS } from './Config.js'
 import CollisionBox from './CollisionBox.js'
 import Runner from './Runner.js'
+import NeuralNetwork from '../neuralnetwork/nn.js'
 export default class Trex {
     //******************************************************************************
     /**
@@ -10,7 +11,7 @@ export default class Trex {
      * @param {Object} spritePos Positioning within image sprite.
      * @constructor
      */
-    constructor(canvas, spritePos) {
+    constructor(canvas, spritePos,brain) {
         this.canvas = canvas;
         this.canvasCtx = canvas.getContext('2d');
         this.spritePos = spritePos;
@@ -28,7 +29,12 @@ export default class Trex {
         this.config = Trex.config;
         // Current status.
         this.status = Trex.status.WAITING;
-
+        if(brain){
+            this.brain=brain.copy();
+            this.mutate()
+        }else{
+            this.brain=new NeuralNetwork(3,6,2)
+        }
         this.jumping = false;
         this.ducking = false;
         this.jumpVelocity = 0;
@@ -36,6 +42,9 @@ export default class Trex {
         this.speedDrop = false;
         this.jumpCount = 0;
         this.jumpspotX = 0;
+        this.score=0;
+        this.fitness=0;
+        this.id=Math.round((Math.random() * 36 ** 12)).toString(36);
 
         this.rgba=`rgba(${getRandomNum(1,255)},${getRandomNum(1,255)},${getRandomNum(1,255)},0.5)`
 
@@ -129,7 +138,35 @@ export default class Trex {
         }
     };
 
+    mutate(){
+        this.brain.mutate(0.1);
+    }
+    think(obstacle,currentSpeed) {
+        if(!this.jumping){
+            const inputs =convertStateToVector( {
+                obstacleX: obstacle.xPos,
+                //obstacleY: obstacle.yPos,
+                obstacleWidth: obstacle.width,
+                speed: currentSpeed/*Runner.instance_.currentSpeed*/
+            });
 
+
+            const action = this.brain.predict(inputs);
+           // console.log(inputs[0],inputs[1],inputs[2],inputs[3],action[0],action[1])
+            if (action[0] > action[1]) {
+                this.startJump();
+            } else /*if (action === -1) */{
+                if (this.jumping) {
+                // Speed drop, activated only when jump key is not pressed.
+                this.setSpeedDrop();
+                } else if (!this.jumping && !this.ducking) {
+                // Duck.
+                this.setDuck(true);
+                }
+            }
+        }
+
+    }
     /**
      * T-rex player initaliser.
      * Sets the t-rex to blink at random intervals.
@@ -224,7 +261,8 @@ export default class Trex {
         sourceY += this.spritePos.y;
 
         this.canvasCtx.fillStyle = this.rgba;
-        
+        this.canvasCtx.font = "10px Arial";
+        this.canvasCtx.fillText(this.score, this.xPos, this.yPos);
         // Ducking.
         if (this.ducking && this.status != Trex.status.CRASHED) {
             this.canvasCtx.drawImage(Runner.imageSprite, sourceX, sourceY,
@@ -376,5 +414,7 @@ export default class Trex {
         this.speedDrop = false;
         this.jumpCount = 0;
         this.crashed = false;
+        this.score=0;
+        this.fitness=0;
     }
 }

@@ -8,6 +8,8 @@ import Runner from './Runner.js'
  */
 export var DEFAULT_WIDTH = 600;
 
+export var DEFAULT_HEIGHT=150
+
 /**
  * Frames per second.
  * @const

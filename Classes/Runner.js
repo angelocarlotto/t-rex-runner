@@ -11,6 +11,7 @@ import {
     , IS_MOBILE
     , IS_IOS
     , FPS, IS_HIDPI
+    ,DEFAULT_HEIGHT
 } from './Config.js'
 import Horizon from './Horizon.js'
 import DistanceMeter from './DistanceMeter.js'
@@ -133,7 +134,7 @@ export default class Runner {
      */
     static defaultDimensions = {
         WIDTH: DEFAULT_WIDTH,
-        HEIGHT: 150
+        HEIGHT: DEFAULT_HEIGHT
     };
 
     /**
@@ -365,14 +366,14 @@ export default class Runner {
         this.playCount++;
 
         // Handle tabbing off the page. Pause the current game.
-           document.addEventListener(Runner.events.VISIBILITY,
+         /*  document.addEventListener(Runner.events.VISIBILITY,
                this.onVisibilityChange.bind(this));
    
            window.addEventListener(Runner.events.BLUR,
                this.onVisibilityChange.bind(this));
    
            window.addEventListener(Runner.events.FOCUS,
-               this.onVisibilityChange.bind(this));
+               this.onVisibilityChange.bind(this));*/
                
     }
 
@@ -889,11 +890,11 @@ export default class Runner {
     onVisibilityChange(e) {
         if (document.hidden || document.webkitHidden || e.type == 'blur' ||
             document.visibilityState != 'visible') {
-            this.stop();
+           // this.stop();
         } else if (!this.crashed) {
             //this.tRex.reset();
-            this.tRexGroup.reset()
-            this.play();
+            //this.tRexGroup.reset()
+           // this.play();
         }
     }
 
